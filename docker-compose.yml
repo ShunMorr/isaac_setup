@@ -1,0 +1,76 @@
+# docker-compose.yml - Isaac Sim + cuRobo 環境
+# 
+# 使用方法:
+#   docker-compose up -d          # バックグラウンドで起動
+#   docker-compose exec isaac-sim bash  # コンテナに入る
+#   docker-compose down           # 停止
+#   docker-compose logs -f        # ログ確認
+
+version: "3.8"
+
+services:
+  isaac-sim:
+    image: nvcr.io/nvidia/isaac-sim:5.1.0
+    container_name: isaac-sim
+    
+    # GPU設定
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # 環境変数
+    environment:
+      - ACCEPT_EULA=Y
+      - PRIVACY_CONSENT=Y
+      - DISPLAY=${DISPLAY:-}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    
+    # ネットワーク設定（WebRTCストリーミング用）
+    network_mode: host
+    
+    # ボリュームマウント
+    volumes:
+      # Isaac Simキャッシュ
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/cache/main:/isaac-sim/.cache:rw
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/cache/computecache:/isaac-sim/.nv/ComputeCache:rw
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/logs:/isaac-sim/.nvidia-omniverse/logs:rw
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/config:/isaac-sim/.nvidia-omniverse/config:rw
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/data:/isaac-sim/.local/share/ov/data:rw
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/pkg:/isaac-sim/.local/share/ov/pkg:rw
+      
+      # cuRobo用（永続化）
+      - ${ISAAC_SIM_CACHE_DIR:-~/docker/isaac-sim}/curobo:/curobo:rw
+      
+      # スクリプトとコンフィグのマウント
+      - ./scripts:/scripts:ro
+      - ./configs:/configs:ro
+    
+    # ユーザー設定
+    user: "1234:1234"
+    
+    # 作業ディレクトリ
+    working_dir: /isaac-sim
+    
+    # コンテナを維持（対話的に使用するため）
+    stdin_open: true
+    tty: true
+    
+    # エントリポイント（bashで待機）
+    entrypoint: ["/bin/bash"]
+    
+    # ヘルスチェック
+    healthcheck:
+      test: ["CMD", "nvidia-smi"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # 再起動ポリシー
+    restart: unless-stopped
