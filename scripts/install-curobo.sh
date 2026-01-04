@@ -1,71 +1,46 @@
 #!/bin/bash
 # install-curobo.sh - cuRoboをIsaac Sim環境にインストール
+# このスクリプトはコンテナ内で実行します
+
 set -e
 
 echo "=============================================="
-echo "cuRobo インストールスクリプト"
+echo "cuRobo インストール"
 echo "=============================================="
 
-# cuRoboディレクトリ
-CUROBO_DIR="/curobo"
+# cuRoboディレクトリ確認
+if [ ! -d "/curobo" ]; then
+    echo "エラー: /curobo ディレクトリが見つかりません"
+    echo "setup.shを実行してからコンテナを起動してください"
+    exit 1
+fi
 
 # 既にインストール済みか確認
-if [ -d "$CUROBO_DIR/curobo" ] && [ -f "$CUROBO_DIR/curobo/setup.py" ]; then
-    echo "cuRoboは既にインストールされています。"
-    echo ""
-    read -p "再インストールしますか？ (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "インストールをスキップします。"
-        exit 0
-    fi
-    rm -rf "$CUROBO_DIR/curobo"
+if /isaac-sim/python.sh -c "import curobo" 2>/dev/null; then
+    echo "cuRoboは既にインストールされています"
+    /isaac-sim/python.sh -c "import curobo; print(f'cuRobo version: {curobo.__version__}')"
+    exit 0
 fi
 
-# 1. 依存パッケージのインストール
 echo ""
-echo "[1/4] 依存パッケージをインストール中..."
-pip install --upgrade pip
-pip install tomli wheel ninja
+echo "[1/3] 依存パッケージをインストール中..."
+/isaac-sim/python.sh -m pip install tomli wheel ninja
 
-# git lfsのインストール（必要な場合）
-if ! command -v git-lfs &> /dev/null; then
-    echo "git-lfs をインストール中..."
-    apt-get update && apt-get install -y git-lfs
-fi
-git lfs install
-
-# 2. cuRoboのクローン
 echo ""
-echo "[2/4] cuRoboリポジトリをクローン中..."
-cd "$CUROBO_DIR"
-git clone https://github.com/NVlabs/curobo.git
-cd curobo
+echo "[2/3] cuRoboをインストール中（数分かかります）..."
+cd /curobo
+/isaac-sim/python.sh -m pip install -e ".[isaacsim]" --no-build-isolation
 
-# 3. cuRoboのインストール
 echo ""
-echo "[3/4] cuRoboをインストール中（数分かかります）..."
-pip install -e ".[isaacsim]" --no-build-isolation
-
-# 4. インストール確認
-echo ""
-echo "[4/4] インストールを確認中..."
-
-python -c "
+echo "[3/3] インストールを確認中..."
+/isaac-sim/python.sh -c "
 import curobo
 print(f'cuRobo version: {curobo.__version__}')
 from curobo.types.robot import RobotConfig
 print('RobotConfig imported successfully')
 from curobo.wrap.reacher.motion_gen import MotionGen
 print('MotionGen imported successfully')
-print('')
-print('cuRobo installation verified!')
 "
-
-# 5. UR5e設定の確認
-echo ""
-echo "利用可能なロボット設定:"
-ls -la "$CUROBO_DIR/curobo/src/curobo/content/configs/robot/" | grep -E "ur|franka"
 
 echo ""
 echo "=============================================="
@@ -74,13 +49,10 @@ echo "=============================================="
 echo ""
 echo "使用例:"
 echo ""
-echo "  # UR5eでモーション生成（Isaac Sim UI付き）"
-echo "  cd $CUROBO_DIR/curobo"
-echo "  python examples/isaac_sim/motion_gen_reacher.py --robot ur5e.yml --visualize_spheres"
+echo "  # UR5eでモーション生成"
+echo "  cd /curobo"
+echo "  /isaac-sim/python.sh examples/isaac_sim/motion_gen_reacher.py --robot ur5e.yml"
 echo ""
-echo "  # Franka Pandaでモーション生成"
-echo "  python examples/isaac_sim/motion_gen_reacher.py --robot franka.yml"
-echo ""
-echo "  # IK到達可能性デモ"
-echo "  python examples/isaac_sim/ik_reachability.py --robot ur5e.yml"
+echo "  # 衝突球を可視化"
+echo "  /isaac-sim/python.sh examples/isaac_sim/motion_gen_reacher.py --robot ur5e.yml --visualize_spheres"
 echo ""

@@ -1,33 +1,18 @@
 # .gitignore
 
-# 環境変数ファイル（パスワード等含む可能性）
-.env
-.env.local
-.env.*.local
-
-# キャッシュディレクトリ
-cache/
-__pycache__/
-*.pyc
-*.pyo
-
 # ログファイル
 *.log
 logs/
+
+# キャッシュ
+__pycache__/
+*.pyc
 
 # OS生成ファイル
 .DS_Store
 Thumbs.db
 
-# IDE設定
+# IDE
 .vscode/
 .idea/
 *.swp
-*.swo
-
-# Dockerボリュームデータ（ローカルテスト用）
-docker-data/
-
-# 一時ファイル
-*.tmp
-*.temp
