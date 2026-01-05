@@ -84,3 +84,33 @@ echo "4. WebRTC Clientで接続:"
 echo "   Server: $PUBLIC_IP"
 echo ""
 echo "=============================================="
+
+# streamの自動開始systemdサービスの作成
+echo "systemdサービスをセットアップ中..."
+
+# サービスファイルを作成
+sudo tee /etc/systemd/system/isaac-sim-streaming.service > /dev/null << 'SERVICEEOF'
+[Unit]
+Description=Isaac Sim Streaming Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/isaac-scripts/start-streaming-daemon.sh
+ExecStop=/usr/bin/docker stop isaac-sim
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable isaac-sim-streaming.service
+
+echo "セットアップ完了！"
+echo "次回のVM起動時から自動的にストリーミングが開始されます"
+echo "今すぐ開始: sudo systemctl start isaac-sim-streaming.service"
