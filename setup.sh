@@ -51,8 +51,8 @@ sudo chown -R 1234:1234 ~/docker/isaac-sim
 print_status "スクリプトを準備中..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p ~/isaac-scripts
-cp "$SCRIPT_DIR/scripts/"*.sh ~/isaac-scripts/ 2>/dev/null || true
-chmod +x ~/isaac-scripts/*.sh 2>/dev/null || true
+cp "$SCRIPT_DIR/scripts/"* ~/isaac-scripts/ 2>/dev/null || true
+chmod +x ~/isaac-scripts/* 2>/dev/null || true
 
 # 5. Isaac Simコンテナをプル
 print_status "Isaac Simコンテナをプル中（数分かかります）..."
